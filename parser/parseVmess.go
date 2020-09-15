@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fetchSubscription/decoder"
 	"fmt"
-	"html/template"
+	"io/ioutil"
 	"strings"
+	"text/template"
 
 	"github.com/sirupsen/logrus"
 )
@@ -24,6 +25,20 @@ type VmessNode struct {
 	Ps   string
 	Id   string
 	// Class int
+}
+
+var (
+	err  error
+	tmpl *template.Template
+)
+
+func init() {
+	tmplFile := "v2ray.tmpl"
+	var err error
+	tmpl, err = template.ParseFiles(tmplFile)
+	if err != nil {
+		logrus.Fatalf("parse template file error: %v", err)
+	}
 }
 
 func parse_vmess(node string) (string, string, error) {
@@ -53,7 +68,7 @@ func convert_vmess(node string) (string, string, error) {
 	reader := strings.NewReader(node)
 
 	var vnode VmessNode
-	err := json.NewDecoder(reader).Decode(&vnode)
+	err = json.NewDecoder(reader).Decode(&vnode)
 	if err != nil {
 		logrus.Errorf("decode data to json object error: %v", err)
 		return "", "", err
@@ -116,12 +131,6 @@ func convert_vmess(node string) (string, string, error) {
 		vnode.Host = strings.ReplaceAll(vnode.Host, ",", `","`)
 	}
 
-	tmpl, err := template.New("vmessTmpl").Parse(vmessTmpl)
-	if err != nil {
-		logrus.Errorf("parse template error: %v", err)
-		return "", "", err
-	}
-
 	w := bytes.Buffer{}
 	switch vnode.Net {
 	case "tcp":
@@ -143,6 +152,7 @@ func convert_vmess(node string) (string, string, error) {
 	default:
 		return "", "", fmt.Errorf("unknow net field: %v", vnode.Net)
 	}
+	ioutil.ReadAll(&w)
 
 	m := map[string]string{
 		"address":      vnode.Add,
@@ -158,9 +168,13 @@ func convert_vmess(node string) (string, string, error) {
 		"httpSettings": h2,
 	}
 	tmpl.ExecuteTemplate(&w, "outbound", m)
-
 	outbound := w.String()
-	logrus.Infof("vmess node: %v", outbound)
+	ioutil.ReadAll(&w)
+	logrus.Infof("--------vmess node: %v", outbound)
 
-	return vnode.Ps, outbound, nil
+	tmpl.ExecuteTemplate(&w, "full", map[string]string{"outbound": outbound})
+	all := w.String()
+	ioutil.ReadAll(&w)
+
+	return vnode.Ps, all, nil
 }

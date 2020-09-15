@@ -1,6 +1,3 @@
-package parser
-
-const vmessTmpl = `
 {{ define "tcp" }}
 			{
 				"connectionReuse": true,
@@ -102,4 +99,92 @@ const vmessTmpl = `
 		}
 
 {{ end }}
-`
+
+{{ define "full" }}
+{
+  "log": {
+    "access": "/dev/null",
+    "error": "/tmp/v2ray_log.log",
+    "loglevel": "error"
+  },
+  "inbounds": [
+    {
+      "tag": "tproxy",
+      "protocol": "dokodemo-door",
+      "listen": "0.0.0.0",
+      "port": 1280,
+      "settings": {
+        "network": "tcp,udp",
+        "followRedirect": true
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls"
+        ]
+      }
+    },
+    {
+      "tag": "http",
+      "protocol": "http",
+      "port": 1282,
+      "settings": {
+        "accounts": [
+          {
+            "user": "user",
+            "pass": "usernopass"
+          }
+        ],
+        "timeout": 0,
+        "userLevel": 0,
+        "allowTransparent": false
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls"
+        ]
+      }
+    },
+    {
+      "tag": "socks5",
+      "protocol": "socks",
+      "port": 1281,
+      "settings": {
+        "auth": "password",
+        "accounts": [
+          {
+            "user": "user",
+            "pass": "usernopass"
+          }
+        ],
+        "userLevel": 0,
+        "ip": "0.0.0.0",
+        "udp": true
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls"
+        ]
+      }
+    },
+    {
+      "tag": "dns",
+      "protocol": "dokodemo-door",
+      "port": 7913,
+      "settings": {
+        "address": "8.8.8.8",
+        "port": 53,
+        "network": "udp",
+        "timeout": 0,
+        "followRedirect": false
+      }
+    }
+  ],
+{{.outbound}}
+}
+{{ end }}
