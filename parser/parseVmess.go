@@ -1,9 +1,11 @@
 package parser
 
 import (
+	"bytes"
 	"encoding/json"
 	"fetchSubscription/decoder"
 	"fmt"
+	"html/template"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -97,11 +99,11 @@ func convert_vmess(node string) (string, string, error) {
 	vnode.Path = v2Path
 
 	var (
-		tcp string
-		kcp string
-		ws  string
-		h2  string
-		tls string
+		tcp string = "null"
+		kcp string = "null"
+		ws  string = "null"
+		h2  string = "null"
+		tls string = "null"
 	)
 
 	if vnode.Tls == "tls" {
@@ -114,118 +116,50 @@ func convert_vmess(node string) (string, string, error) {
 		vnode.Host = strings.ReplaceAll(vnode.Host, ",", `","`)
 	}
 
+	tmpl, err := template.New("vmessTmpl").Parse(vmessTmpl)
+	if err != nil {
+		logrus.Errorf("parse template error: %v", err)
+		return "", "", err
+	}
+
+	w := bytes.Buffer{}
 	switch vnode.Net {
 	case "tcp":
 		if vnode.Type == "http" {
-			//TODO replace with go template
-			tcp = fmt.Sprintf(`
-			{
-				"connectionReuse": true,
-				"header": {
-					"type": "http",
-					"request": {
-						"version": "1.1",
-						"method": "GET",
-						"path": ["/"],
-						"headers": {
-							"Host": ["%v"],
-							"User-Agent": ["Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.75 Safari/537.36","Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46"],
-							"Accept-Encoding": ["gzip, deflate"],
-							"Connection": ["keep-alive"],
-							"Pragma": "no-cache"
-						}
-					},
-					"response": {
-						"version": "1.1",
-						"status": "200",
-						"reason": "OK",
-						"headers": {
-							"Content-Type": ["application/octet-stream","video/mpeg"],
-							"Transfer-Encoding": ["chunked"],
-							"Connection": ["keep-alive"],
-							"Pragma": "no-cache"
-						}
-					}
-				}
-			}
-			`, vnode.Host)
+			tmpl.ExecuteTemplate(&w, "tcp", vnode)
+			tcp = w.String()
 		} else {
 			tcp = "null"
 		}
 	case "kcp":
-		kcp = fmt.Sprintf(`
-		{
-			"mtu": 1350,
-			"tti": 50,
-			"uplinkCapacity": 12,
-			"downlinkCapacity": 100,
-			"congestion": false,
-			"readBufferSize": 2,
-			"writeBufferSize": 2,
-			"header": {
-				"type": "%v",
-				"request": null,
-				"response": null
-			}
-		}
-		`, vnode.Type)
+		tmpl.ExecuteTemplate(&w, "kcp", vnode)
+		kcp = w.String()
 	case "ws":
-		ws = fmt.Sprintf(`
-		{
-			"connectionReuse": true,
-			"path": "%v",
-			"headers": {
-				"Host": "%v"
-			}
-		}
-		`, vnode.Path, vnode.Host)
+		tmpl.ExecuteTemplate(&w, "ws", vnode)
+		ws = w.String()
 	case "h2":
-		h2 = fmt.Sprintf(`
-		{
-			"path": "%v",
-			"headers": {
-				"Host": "%v"
-			}
-		}
-		`, vnode.Path, vnode.Host)
+		tmpl.ExecuteTemplate(&w, "h2", vnode)
+		h2 = w.String()
 	default:
 		return "", "", fmt.Errorf("unknow net field: %v", vnode.Net)
 	}
 
-	outbound := fmt.Sprintf(`
-		{
-			"outbound": {
-				"protocol": "vmess",
-				"settings": {
-					"vnext": [
-						{
-							"address": "%v",
-							"port": %v,
-							"users": [
-								{
-									"id": "%v",
-									"alterId": %v,
-									"security": "auto"
-								}
-							]
-						}
-					]
-				},
-				"streamSettings": {
-					"network": "%v",
-					"security": "%v",
-					"tlsSettings": %v,
-					"tcpSettings": %v,
-					"kcpSettings": %v,
-					"wsSettings": %v,
-					"httpSettings": %v
-				},
-				"mux": {
-					"enabled": true
-				}
-			}
-		}"
-	`, vnode.Add, vnode.Port, vnode.Id, vnode.Aid, vnode.Net, vnode.Tls, tls, tcp, kcp, ws, h2)
+	m := map[string]string{
+		"address":      vnode.Add,
+		"port":         fmt.Sprintf("%d", vnode.Port),
+		"id":           vnode.Id,
+		"alterId":      fmt.Sprintf("%d", vnode.Aid),
+		"network":      vnode.Net,
+		"security":     vnode.Tls,
+		"tlsSettings":  tls,
+		"tcpSettings":  tcp,
+		"kcpSettings":  kcp,
+		"wsSettings":   ws,
+		"httpSettings": h2,
+	}
+	tmpl.ExecuteTemplate(&w, "outbound", m)
+
+	outbound := w.String()
 	logrus.Infof("vmess node: %v", outbound)
 
 	return vnode.Ps, outbound, nil
