@@ -41,7 +41,7 @@ func init() {
 	}
 }
 
-func parse_vmess(node string) (string, string, error) {
+func parse_vmess(node string, full bool) (string, string, error) {
 	node = node[len(PrefixVmess):]
 	logrus.WithField("node", node).Infof("parse_vmess")
 
@@ -53,12 +53,55 @@ func parse_vmess(node string) (string, string, error) {
 	logrus.Infof("decoded vmess node: %s", decoded)
 
 	// decoded data format:
-	// {"host":"","path":"","tls":"","add":"14.17.97.145","port":5010,"aid":2,"net":"tcp","type":"none","v":"2","ps":"台湾 01 [D3/VR/IPLC]","id":"32470e14-85fb-3bf0-aa0c-1f7ba46b58b7","class":3}
+	// {
+	// "host":"",
+	// "path":"",
+	// "tls":"",
+	// "add":"14.17.97.145",
+	// "port":5010,
+	// "aid":2,
+	// "net":"tcp",
+	// "type":"none",
+	// "v":"2",
+	// "ps":"台湾 01 [D3/VR/IPLC]",
+	// "id":"32470e14-85fb-3bf0-aa0c-1f7ba46b58b7",
+	// "class":3
+	// }
 
-	return convert_vmess(decoded)
+	return convert_vmess(decoded, full)
 }
 
-func convert_vmess(node string) (string, string, error) {
+// https://github.com/2dust/v2rayN/wiki/%E5%88%86%E4%BA%AB%E9%93%BE%E6%8E%A5%E6%A0%BC%E5%BC%8F%E8%AF%B4%E6%98%8E(ver-2)
+// json数据如下
+// {
+// "v": "2",
+// "ps": "备注别名",
+// "add": "111.111.111.111",
+// "port": "32000",
+// "id": "1386f85e-657b-4d6e-9d56-78badb75e1fd",
+// "aid": "100",
+// "net": "tcp",
+// "type": "none",
+// "host": "www.bbb.com",
+// "path": "/",
+// "tls": "tls"
+// }
+
+// v:配置文件版本号,主要用来识别当前配置
+// net ：传输协议（tcp\kcp\ws\h2\quic)
+// type:伪装类型（none\http\srtp\utp\wechat-video） *tcp or kcp or QUIC
+// host：伪装的域名
+// 1)http host中间逗号(,)隔开
+// 2)ws host
+// 3)h2 host
+// 4)QUIC securty
+// path:path
+// 1)ws path
+// 2)h2 path
+// 3)QUIC key/Kcp seed
+// tls：底层传输安全（tls)
+
+func convert_vmess(node string, full bool) (string, string, error) {
 
 	var (
 		v2Path string
@@ -172,9 +215,11 @@ func convert_vmess(node string) (string, string, error) {
 	ioutil.ReadAll(&w)
 	logrus.Infof("--------vmess node: %v", outbound)
 
-	tmpl.ExecuteTemplate(&w, "full", map[string]string{"outbound": outbound})
-	all := w.String()
-	ioutil.ReadAll(&w)
+	if full {
+		tmpl.ExecuteTemplate(&w, "full", map[string]string{"outbound": outbound})
+		outbound = w.String()
+		ioutil.ReadAll(&w)
+	}
 
-	return vnode.Ps, all, nil
+	return vnode.Ps, outbound, nil
 }

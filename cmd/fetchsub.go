@@ -27,7 +27,7 @@ func main() {
 		logrus.Fatalf("decode error: %v", err)
 	}
 
-	nodes, err := parser.Parse(decoded, nil)
+	nodes, err := parser.Parse(decoded, nil, true)
 	if err != nil {
 		logrus.Fatalf("parse error: %v", err)
 	}

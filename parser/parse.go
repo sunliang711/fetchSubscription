@@ -15,7 +15,7 @@ type FilterConfig struct {
 	Regex string
 }
 
-func Parse(nodesContent string, cfg *FilterConfig) (map[string]string, error) {
+func Parse(nodesContent string, cfg *FilterConfig, full bool) (map[string]string, error) {
 	//TODO delete
 	logrus.SetLevel(logrus.DebugLevel)
 
@@ -30,7 +30,7 @@ func Parse(nodesContent string, cfg *FilterConfig) (map[string]string, error) {
 			continue
 		}
 		logrus.Debugf("node data: %v", node)
-		name, parsed, err := parse(node)
+		name, parsed, err := parse(node, full)
 		if err != nil {
 			logrus.Errorf("parse node:%v error: %v,skip...", node, err)
 		} else {
@@ -47,16 +47,15 @@ const (
 	PrefixSs    = "ss://"
 )
 
-func parse(node string) (string, string, error) {
+func parse(node string, full bool) (string, string, error) {
 	switch {
 	case strings.HasPrefix(node, PrefixVmess):
-		return parse_vmess(node)
+		return parse_vmess(node, full)
 	case strings.HasPrefix(node, PrefixSs):
-		return parse_ss(node)
+		return parse_ss(node, full)
 	default:
 		return "", "", fmt.Errorf("Only support vmess ss")
 	}
-
 }
 
 func filter(name string, cfg *FilterConfig) bool {
