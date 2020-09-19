@@ -196,7 +196,9 @@
         "BEGIN socks":"",
         "tag":"{{.ps}}",
         "protocol": "socks",
+        "BEGIN port":"",
         "port": {{.port}},
+        "END port":"",
         "settings": {
           "auth": "noauth"
         },
@@ -219,6 +221,7 @@
       "error": "/tmp/v2ray-backend.log"
     },
     "inbounds": [
+      //InPorts: {{- range $index, $ele :=. -}}{{ if $index }},{{end}}{{$ele.InPort}}{{- end}}
       {{- range $index, $ele :=. -}}
         {{ if $index }}    , {{ end }}
         {{.InboundString}}

@@ -55,6 +55,7 @@ var (
 
 type Multi struct {
 	Ps             string
+	InPort         string
 	InboundString  string
 	OutboundString string
 }
@@ -90,12 +91,12 @@ func ParseMulti(nodesContent string, cfg *FilterConfig, startPort int) (string, 
 		}
 		inboundString := b.String()
 		ioutil.ReadAll(&b)
-		inPort += 1
 		logrus.Debugf("inbound: %v", inboundString)
 
-		multi := Multi{Ps: ps, InboundString: inboundString, OutboundString: outbound}
+		multi := Multi{Ps: ps, InPort: fmt.Sprintf("%d", inPort), InboundString: inboundString, OutboundString: outbound}
 
 		multiObjs = append(multiObjs, multi)
+		inPort += 1
 	}
 
 	err = tmpl.ExecuteTemplate(&b, "multi-outbounds", multiObjs)
