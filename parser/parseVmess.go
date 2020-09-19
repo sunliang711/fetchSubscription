@@ -101,6 +101,8 @@ func parse_vmess(node string, full bool) (string, string, error) {
 // 3)QUIC key/Kcp seed
 // tls：底层传输安全（tls)
 
+// @param full 表示把outbound生成到完整的单outbound的配置文件中
+// 如果要生成多outbounds则用false
 func convert_vmess(node string, full bool) (string, string, error) {
 
 	var (
@@ -198,6 +200,7 @@ func convert_vmess(node string, full bool) (string, string, error) {
 	ioutil.ReadAll(&w)
 
 	m := map[string]string{
+		"ps":           vnode.Ps,
 		"address":      vnode.Add,
 		"port":         fmt.Sprintf("%d", vnode.Port),
 		"id":           vnode.Id,
@@ -216,7 +219,7 @@ func convert_vmess(node string, full bool) (string, string, error) {
 	logrus.Infof("--------vmess node: %v", outbound)
 
 	if full {
-		tmpl.ExecuteTemplate(&w, "full", map[string]string{"outbound": outbound})
+		tmpl.ExecuteTemplate(&w, "single-outbound", map[string]string{"outbound": outbound})
 		outbound = w.String()
 		ioutil.ReadAll(&w)
 	}

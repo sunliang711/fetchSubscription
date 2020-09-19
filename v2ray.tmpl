@@ -67,40 +67,40 @@
 {{ end }}
 
 {{ define "outbound" }}
-		"outbound": {
-			"protocol": "vmess",
-			"settings": {
-				"vnext": [
-					{
-						"address": "{{.address}}",
-						"port": {{.port}},
-						"users": [
-							{
-								"id": "{{.id}}",
-								"alterId": {{.alterId}},
-								"security": "auto"
-							}
-						]
-					}
-				]
-			},
-			"streamSettings": {
-				"network": "{{.network}}",
-				"security": "{{.security}}",
-				"tlsSettings": {{.tlsSettings}},
-				"tcpSettings": {{.tcpSettings}},
-				"kcpSettings": {{.kcpSettings}},
-				"wsSettings": {{.wsSettings}},
-				"httpSettings": {{.httpSettings}}
-			},
-			"mux": {
-				"enabled": true
-			}
-		}
-
+    {
+        "tag": "{{.ps}}",
+        "protocol": "vmess",
+        "settings": {
+            "vnext": [
+                {
+                    "address": "{{.address}}",
+                    "port": {{.port}},
+                    "users": [
+                        {
+                            "id": "{{.id}}",
+                            "alterId": {{.alterId}},
+                            "security": "auto"
+                        }
+                    ]
+                }
+            ]
+        },
+        "streamSettings": {
+            "network": "{{.network}}",
+            "security": "{{.security}}",
+            "tlsSettings": {{.tlsSettings}},
+            "tcpSettings": {{.tcpSettings}},
+            "kcpSettings": {{.kcpSettings}},
+            "wsSettings": {{.wsSettings}},
+            "httpSettings": {{.httpSettings}}
+        },
+        "mux": {
+            "enabled": true
+        }
+    }
 {{ end }}
 
-{{ define "full" }}
+{{ define "single-outbound" }}
 {
   "log": {
     "access": "/dev/null",
@@ -185,6 +185,65 @@
       }
     }
   ],
+  "outbounds":[
 {{.outbound}}
+  ]
 }
+{{ end }}
+
+{{ define "inbound" }}
+      {
+        "BEGIN socks":"",
+        "tag":"{{.ps}}",
+        "protocol": "socks",
+        "port": {{.port}},
+        "settings": {
+          "auth": "noauth"
+        },
+        "sniffing": {
+          "enabled": true,
+          "destOverride": [
+            "http",
+            "tls"
+          ]
+        },
+        "END socks":""
+      }
+{{ end }}
+
+{{ define  "multi-outbounds" }}
+{
+    "log": {
+      "loglevel": "warning",
+      "access": "/tmp/v2ray-backend.log",
+      "error": "/tmp/v2ray-backend.log"
+    },
+    "inbounds": [
+      {{- range $index, $ele :=. -}}
+        {{ if $index }}    , {{ end }}
+        {{.InboundString}}
+      {{- end }}
+    ],
+    "outbounds": [
+    {{- range $index,$ele :=. -}}
+        {{ if $index }}    , {{ end }}
+        {{ .OutboundString }}
+    {{- end }}
+    ],
+    "routing": {
+      "domainStrategy": "IPOnDemand",
+      "rules": [
+      {{- range $index, $ele := . -}}
+        {{ if $index }}, {{ end }}
+        {
+            "type":"field",
+            "inboundTag":["{{.Ps}}"],
+            "outboundTag":"{{.Ps}}"
+        }
+
+      {{- end }}
+      ]
+    }
+ }
+
 {{ end }}

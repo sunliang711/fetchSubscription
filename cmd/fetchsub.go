@@ -27,12 +27,26 @@ func main() {
 		logrus.Fatalf("decode error: %v", err)
 	}
 
-	nodes, err := parser.Parse(decoded, nil, true)
+	// nodes, err := parser.Parse(decoded, nil, false)
+	// if err != nil {
+	// 	logrus.Fatalf("parse error: %v", err)
+	// }
+	// for name, node := range nodes {
+	// 	logrus.Infof("name: %v node: %v", name, node)
+	// }
+
+	config, err := parser.ParseMulti(decoded, nil, 9000)
 	if err != nil {
-		logrus.Fatalf("parse error: %v", err)
+		fmt.Printf("ParseMulti error: %v", err)
+		return
 	}
-	for name, node := range nodes {
-		logrus.Infof("name: %v node: %v", name, node)
+	fmt.Printf("config: %v", config)
+
+	f, err := os.OpenFile("config.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	if err != nil {
+		fmt.Printf("open file error: %v", err)
+		return
 	}
+	f.WriteString(config)
 
 }
