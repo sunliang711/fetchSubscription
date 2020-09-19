@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net"
 	"strings"
+	"text/template"
 
 	"github.com/sirupsen/logrus"
 )
@@ -19,8 +20,23 @@ type FilterConfig struct {
 	Regex string
 }
 
+var (
+	err  error
+	tmpl *template.Template
+)
+
+func initTmpl(tmplFile string) {
+	// tmplFile := "v2ray.tmpl"
+	var err error
+	tmpl, err = template.ParseFiles(tmplFile)
+	if err != nil {
+		logrus.Fatalf("parse template file error: %v", err)
+	}
+}
+
 // Parse生成outbound的map或者含有单个outbound配置文件(full=true)字符串的map
-func Parse(nodesContent string, cfg *FilterConfig, full bool) (map[string]string, error) {
+func Parse(nodesContent string, cfg *FilterConfig, full bool, tmplFile string) (map[string]string, error) {
+	initTmpl(tmplFile)
 
 	// name => config
 	ret := make(map[string]string)
@@ -35,7 +51,8 @@ func Parse(nodesContent string, cfg *FilterConfig, full bool) (map[string]string
 		logrus.Debugf("node data: %v", node)
 		name, parsed, err := parse(node, full)
 		if err != nil {
-			logrus.Errorf("parse node:%v error: %v,skip...", node, err)
+			// logrus.Errorf("parse node: %v error: %v,skip...", node, err)
+			logrus.WithFields(logrus.Fields{"node": node, "error": err}).Errorf("parse node error")
 		} else {
 			if filter(name, cfg) {
 				ret[name] = parsed
@@ -60,9 +77,9 @@ type Multi struct {
 	OutboundString string
 }
 
-func ParseMulti(nodesContent string, cfg *FilterConfig, startPort int) (string, error) {
+func ParseMulti(nodesContent string, cfg *FilterConfig, startPort int, tmplFile string) (string, error) {
 	// full = false,来获取所有outbound的map
-	outbounds, err := Parse(nodesContent, cfg, false)
+	outbounds, err := Parse(nodesContent, cfg, false, tmplFile)
 	if err != nil {
 		return "", err
 	}

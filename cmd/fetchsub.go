@@ -16,6 +16,7 @@ func main() {
 	outputFile := pflag.StringP("output", "o", "config.json", "output config file")
 	startPort := pflag.Int16P("sport", "p", 13000, "start port")
 	level := pflag.StringP("level", "l", "warning", "log level: debug, info, warning, error, fatal")
+	tmplFile := pflag.StringP("tmpl", "t", "v2ray.tmpl", "template file")
 
 	pflag.Parse()
 
@@ -54,7 +55,7 @@ func main() {
 	// 	logrus.Infof("name: %v node: %v", name, node)
 	// }
 
-	config, err := parser.ParseMulti(decoded, nil, int(*startPort))
+	config, err := parser.ParseMulti(decoded, nil, int(*startPort), *tmplFile)
 	if err != nil {
 		fmt.Printf("ParseMulti error: %v", err)
 		return

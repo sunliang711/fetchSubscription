@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
-	"text/template"
 
 	"github.com/sirupsen/logrus"
 )
@@ -25,20 +24,6 @@ type VmessNode struct {
 	Ps   string
 	Id   string
 	// Class int
-}
-
-var (
-	err  error
-	tmpl *template.Template
-)
-
-func init() {
-	tmplFile := "v2ray.tmpl"
-	var err error
-	tmpl, err = template.ParseFiles(tmplFile)
-	if err != nil {
-		logrus.Fatalf("parse template file error: %v", err)
-	}
 }
 
 func parse_vmess(node string, full bool) (string, string, error) {
@@ -213,7 +198,10 @@ func convert_vmess(node string, full bool) (string, string, error) {
 		"wsSettings":   ws,
 		"httpSettings": h2,
 	}
-	tmpl.ExecuteTemplate(&w, "outbound", m)
+	err = tmpl.ExecuteTemplate(&w, "outbound", m)
+	if err != nil {
+		return "", "", fmt.Errorf("ExecuteTemplate error: %v", err)
+	}
 	outbound := w.String()
 	ioutil.ReadAll(&w)
 	logrus.Infof("--------vmess node: %v", outbound)
