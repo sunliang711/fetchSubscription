@@ -8,17 +8,36 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 )
 
 func main() {
+	subURL := pflag.StringP("url", "u", "", "subscription url")
+	outputFile := pflag.StringP("output", "o", "config.json", "output config file")
+	startPort := pflag.Int16P("sport", "p", 13000, "start port")
+	level := pflag.StringP("level", "l", "warning", "log level: debug, info, warning, error, fatal")
 
-	if len(os.Args) < 2 {
-		fmt.Printf("Usage: %v suburl\n", os.Args[0])
-		return
+	pflag.Parse()
+
+	switch *level {
+	case "debug":
+		logrus.SetLevel(logrus.DebugLevel)
+	case "info":
+		logrus.SetLevel(logrus.InfoLevel)
+	case "warning":
+		logrus.SetLevel(logrus.WarnLevel)
+	case "error":
+		logrus.SetLevel(logrus.ErrorLevel)
+	case "fatal":
+		logrus.SetLevel(logrus.FatalLevel)
+	default:
+		logrus.SetLevel(logrus.WarnLevel)
 	}
 
-	subURL := os.Args[1]
-	content, err := downloader.Download(subURL, nil)
+	if *subURL == "" {
+		logrus.Fatalf("no sub subscription url")
+	}
+	content, err := downloader.Download(*subURL, nil)
 	if err != nil {
 		logrus.Fatalf("download error: %v", err)
 	}
@@ -35,18 +54,19 @@ func main() {
 	// 	logrus.Infof("name: %v node: %v", name, node)
 	// }
 
-	config, err := parser.ParseMulti(decoded, nil, 9000)
+	config, err := parser.ParseMulti(decoded, nil, int(*startPort))
 	if err != nil {
 		fmt.Printf("ParseMulti error: %v", err)
 		return
 	}
 	fmt.Printf("config: %v", config)
 
-	f, err := os.OpenFile("config.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	f, err := os.OpenFile(*outputFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		fmt.Printf("open file error: %v", err)
 		return
 	}
+	defer f.Close()
 	f.WriteString(config)
 
 }

@@ -21,8 +21,6 @@ type FilterConfig struct {
 
 // Parse生成outbound的map或者含有单个outbound配置文件(full=true)字符串的map
 func Parse(nodesContent string, cfg *FilterConfig, full bool) (map[string]string, error) {
-	//TODO delete
-	logrus.SetLevel(logrus.DebugLevel)
 
 	// name => config
 	ret := make(map[string]string)

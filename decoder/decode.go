@@ -9,9 +9,6 @@ import (
 )
 
 func Decode(content string) (string, error) {
-	//TODO: delete SetLevel
-	logrus.SetLevel(logrus.DebugLevel)
-
 	// get length of content
 	lenOfContent := len(content)
 	logrus.Debugf("original decode content: %v", content)
