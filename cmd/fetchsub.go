@@ -17,6 +17,8 @@ func main() {
 	startPort := pflag.Int16P("sport", "p", 13000, "start port")
 	level := pflag.StringP("level", "l", "warning", "log level: debug, info, warning, error, fatal")
 	tmplFile := pflag.StringP("tmpl", "t", "v2ray.tmpl", "template file")
+	whiteList := pflag.StringSliceP("white-list", "w", nil, "white list keywords: -w keyword1,keyword2")
+	blackList := pflag.StringSliceP("black-list", "b", nil, "black list keywords: -b keyword1 -b keyword2")
 
 	pflag.Parse()
 
@@ -34,6 +36,22 @@ func main() {
 	default:
 		logrus.SetLevel(logrus.WarnLevel)
 	}
+
+	if len(*whiteList) > 0 && len(*blackList) > 0 {
+		logrus.Fatalf("Can not use white list and black list simultaneously")
+	}
+
+	cfg := &parser.FilterConfig{}
+	if len(*whiteList) > 0 {
+		cfg.Mode = parser.ModeWhiteList
+		cfg.Lists = *whiteList
+	} else if len(*blackList) > 0 {
+		cfg.Mode = parser.ModeBlackList
+		cfg.Lists = *blackList
+	} else {
+		cfg.Mode = parser.ModeNone
+	}
+	logrus.Debugf("filterConfig: %+v", cfg)
 
 	if *subURL == "" {
 		logrus.Fatalf("no sub subscription url")
@@ -55,7 +73,7 @@ func main() {
 	// 	logrus.Infof("name: %v node: %v", name, node)
 	// }
 
-	config, err := parser.ParseMulti(decoded, nil, int(*startPort), *tmplFile)
+	config, err := parser.ParseMulti(decoded, cfg, int(*startPort), *tmplFile)
 	if err != nil {
 		fmt.Printf("ParseMulti error: %v", err)
 		return

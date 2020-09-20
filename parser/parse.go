@@ -13,11 +13,30 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type ListMode int
+
+func (l ListMode) String() string {
+	switch l {
+	case ModeNone:
+		return "ModeNone"
+	case ModeBlackList:
+		return "ModeBlackList"
+	case ModeWhiteList:
+		return "ModeWhiteList"
+	}
+	return "Unknown mode"
+}
+
+const (
+	ModeNone ListMode = iota
+	ModeWhiteList
+	ModeBlackList
+)
+
 type FilterConfig struct {
-	// 是否启用黑名单，不启用则用白名单
-	EnableBlackList bool
+	Mode ListMode
 	// 黑名单或者白名单匹配时的正则
-	Regex string
+	Lists []string
 }
 
 var (
@@ -151,6 +170,21 @@ func parse(node string, full bool) (string, string, error) {
 }
 
 func filter(name string, cfg *FilterConfig) bool {
-	//TODO
+	switch cfg.Mode {
+	case ModeBlackList:
+		for _, word := range cfg.Lists {
+			if strings.Contains(name, word) {
+				return false
+			}
+		}
+		return true
+	case ModeWhiteList:
+		for _, word := range cfg.Lists {
+			if strings.Contains(name, word) {
+				return true
+			}
+		}
+		return false
+	}
 	return true
 }
