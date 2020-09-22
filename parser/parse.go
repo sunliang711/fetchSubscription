@@ -67,7 +67,7 @@ func Parse(nodesContent string, cfg *FilterConfig, full bool, tmplFile string) (
 		if node == "" {
 			continue
 		}
-		logrus.Debugf("node data: %v", node)
+		logrus.Infof("node raw data: %v", node)
 		name, parsed, err := parse(node, full)
 		if err != nil {
 			// logrus.Errorf("parse node: %v error: %v,skip...", node, err)

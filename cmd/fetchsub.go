@@ -78,7 +78,8 @@ func main() {
 		fmt.Printf("ParseMulti error: %v", err)
 		return
 	}
-	fmt.Printf("config: %v", config)
+	// fmt.Printf("config: %v", config)
+	logrus.Debugf("config: %v", config)
 
 	f, err := os.OpenFile(*outputFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
@@ -87,5 +88,6 @@ func main() {
 	}
 	defer f.Close()
 	f.WriteString(config)
+	logrus.Infof("config file has written to '%v'", *outputFile)
 
 }
