@@ -6,6 +6,7 @@ import (
 	"fetchSubscription/decoder"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -16,14 +17,27 @@ type VmessNode struct {
 	Path string
 	Tls  string
 	Add  string
-	Port int
-	Aid  int
+	Port string
+	Aid  string
 	Net  string
 	Type string
 	V    string
 	Ps   string
 	Id   string
 	// Class int
+}
+
+var (
+	noQuoteRe *regexp.Regexp
+)
+
+func init() {
+	var err error
+	// 有时候返回的字段的值不是字符串，这里匹配它，然后把它加上上引号构成字符串
+	noQuoteRe, err = regexp.Compile(`(:\s*)(\d+)`)
+	if err != nil {
+		logrus.Fatalf("compile quote regexp error: %v", err)
+	}
 }
 
 func parse_vmess(node string, full bool) (string, string, error) {
@@ -35,6 +49,9 @@ func parse_vmess(node string, full bool) (string, string, error) {
 		return "", "", err
 	}
 	logrus.Infof("decoded vmess node: %s", decoded)
+	//TODO not tested
+	// ${1} ${2}是正则的两个捕获
+	decoded = noQuoteRe.ReplaceAllString(decoded, `${1}"${2}"`)
 
 	// decoded data format:
 	// {
@@ -186,9 +203,9 @@ func convert_vmess(node string, full bool) (string, string, error) {
 	m := map[string]string{
 		"ps":           vnode.Ps,
 		"address":      vnode.Add,
-		"port":         fmt.Sprintf("%d", vnode.Port),
+		"port":         vnode.Port,
 		"id":           vnode.Id,
-		"alterId":      fmt.Sprintf("%d", vnode.Aid),
+		"alterId":      vnode.Aid,
 		"network":      vnode.Net,
 		"security":     vnode.Tls,
 		"tlsSettings":  tls,
