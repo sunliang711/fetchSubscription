@@ -80,15 +80,7 @@ func main() {
 		logrus.Fatalf("decode error: %v", err)
 	}
 
-	// nodes, err := parser.Parse(decoded, nil, false)
-	// if err != nil {
-	// 	logrus.Fatalf("parse error: %v", err)
-	// }
-	// for name, node := range nodes {
-	// 	logrus.Infof("name: %v node: %v", name, node)
-	// }
-
-	config, err := parser.ParseMulti(decoded, cfgs, int(*startPort), *tmplFile)
+	config, err := parser.ParseMultiV2ray(decoded, cfgs, int(*startPort), *tmplFile)
 	if err != nil {
 		fmt.Printf("ParseMulti error: %v", err)
 		return

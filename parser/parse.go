@@ -35,7 +35,7 @@ const (
 
 type FilterConfig struct {
 	Mode ListMode
-	// 黑名单或者白名单匹配时的正则
+	// 黑名单或者白名单匹配时的keyword
 	Lists []string
 }
 
@@ -96,7 +96,8 @@ type Multi struct {
 	OutboundString string
 }
 
-func ParseMulti(nodesContent string, cfg []*FilterConfig, startPort int, tmplFile string) (string, error) {
+// PaParseMultiV2ray 生成所有所有节点都放在同一个配置文件中
+func ParseMultiV2ray(nodesContent string, cfg []*FilterConfig, startPort int, tmplFile string) (string, error) {
 	// full = false,来获取所有outbound的map
 	outbounds, err := Parse(nodesContent, cfg, false, tmplFile)
 	if err != nil {
