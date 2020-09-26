@@ -6,6 +6,7 @@ import (
 	"fetchSubscription/parser"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -17,8 +18,7 @@ func main() {
 	startPort := pflag.Int16P("sport", "p", 13000, "start port")
 	level := pflag.StringP("level", "l", "warning", "log level: debug, info, warning, error, fatal")
 	tmplFile := pflag.StringP("tmpl", "t", "v2ray.tmpl", "template file")
-	whiteList := pflag.StringSliceP("white-list", "w", nil, "white list keywords: -w keyword1,keyword2")
-	blackList := pflag.StringSliceP("black-list", "b", nil, "black list keywords: -b keyword1 -b keyword2")
+	filterList := pflag.StringP("filter", "f", "", "specify filter list,format: 'w:VIP2,VIP3;b:game,tv'; 'w' for white list, 'b' for black list. filter rule execute one by one")
 
 	pflag.Parse()
 
@@ -37,21 +37,36 @@ func main() {
 		logrus.SetLevel(logrus.WarnLevel)
 	}
 
-	if len(*whiteList) > 0 && len(*blackList) > 0 {
-		logrus.Fatalf("Can not use white list and black list simultaneously")
+	var cfgs []*parser.FilterConfig
+	if len(*filterList) > 0 {
+		logrus.Debugf("filter list: %v", *filterList)
+		// split by ';'
+		lists := strings.Split(*filterList, ";")
+		for _, list := range lists {
+			if len(list) == 0 {
+				continue
+			}
+			logrus.Debugf("list item: %v", list)
+			// split by ':'
+			items := strings.Split(list, ":")
+			if len(items) != 2 {
+				logrus.Fatalf("filter list format error")
+			}
+			cfg := &parser.FilterConfig{}
+			switch items[0] {
+			case "b":
+				cfg.Mode = parser.ModeBlackList
+			case "w":
+				cfg.Mode = parser.ModeWhiteList
+			default:
+				logrus.Fatalf("filter list format error: unknow filter type")
+			}
+			cfg.Lists = strings.Split(items[1], ",")
+			cfgs = append(cfgs, cfg)
+		}
 	}
 
-	cfg := &parser.FilterConfig{}
-	if len(*whiteList) > 0 {
-		cfg.Mode = parser.ModeWhiteList
-		cfg.Lists = *whiteList
-	} else if len(*blackList) > 0 {
-		cfg.Mode = parser.ModeBlackList
-		cfg.Lists = *blackList
-	} else {
-		cfg.Mode = parser.ModeNone
-	}
-	logrus.Debugf("filterConfig: %+v", cfg)
+	logrus.Debugf("filterConfig: %+v", cfgs)
 
 	if *subURL == "" {
 		logrus.Fatalf("no sub subscription url")
@@ -73,7 +88,7 @@ func main() {
 	// 	logrus.Infof("name: %v node: %v", name, node)
 	// }
 
-	config, err := parser.ParseMulti(decoded, cfg, int(*startPort), *tmplFile)
+	config, err := parser.ParseMulti(decoded, cfgs, int(*startPort), *tmplFile)
 	if err != nil {
 		fmt.Printf("ParseMulti error: %v", err)
 		return

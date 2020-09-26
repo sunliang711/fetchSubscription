@@ -54,7 +54,7 @@ func initTmpl(tmplFile string) {
 }
 
 // Parse生成outbound的map或者含有单个outbound配置文件(full=true)字符串的map
-func Parse(nodesContent string, cfg *FilterConfig, full bool, tmplFile string) (map[string]string, error) {
+func Parse(nodesContent string, cfgs []*FilterConfig, full bool, tmplFile string) (map[string]string, error) {
 	initTmpl(tmplFile)
 
 	// name => config
@@ -73,11 +73,11 @@ func Parse(nodesContent string, cfg *FilterConfig, full bool, tmplFile string) (
 			// logrus.Errorf("parse node: %v error: %v,skip...", node, err)
 			logrus.WithFields(logrus.Fields{"node": node, "error": err}).Errorf("parse node error")
 		} else {
-			if filter(name, cfg) {
-				ret[name] = parsed
-			}
+			ret[name] = parsed
 		}
 	}
+
+	filter(ret, cfgs)
 	return ret, nil
 }
 
@@ -96,7 +96,7 @@ type Multi struct {
 	OutboundString string
 }
 
-func ParseMulti(nodesContent string, cfg *FilterConfig, startPort int, tmplFile string) (string, error) {
+func ParseMulti(nodesContent string, cfg []*FilterConfig, startPort int, tmplFile string) (string, error) {
 	// full = false,来获取所有outbound的map
 	outbounds, err := Parse(nodesContent, cfg, false, tmplFile)
 	if err != nil {
@@ -169,22 +169,34 @@ func parse(node string, full bool) (string, string, error) {
 	}
 }
 
-func filter(name string, cfg *FilterConfig) bool {
-	switch cfg.Mode {
-	case ModeBlackList:
-		for _, word := range cfg.Lists {
-			if strings.Contains(name, word) {
-				return false
+func filter(nodes map[string]string, cfgs []*FilterConfig) {
+	for _, cfg := range cfgs {
+		switch cfg.Mode {
+		case ModeBlackList:
+			for ps, _ := range nodes {
+				for _, black := range cfg.Lists {
+					if strings.Contains(ps, black) {
+						logrus.Infof("delete black list item: %s", ps)
+						delete(nodes, ps)
+					}
+				}
 			}
-		}
-		return true
-	case ModeWhiteList:
-		for _, word := range cfg.Lists {
-			if strings.Contains(name, word) {
-				return true
+		case ModeWhiteList:
+			for ps, _ := range nodes {
+				exist := false
+			INNER:
+				for _, white := range cfg.Lists {
+					if strings.Contains(ps, white) {
+						exist = true
+						break INNER
+					}
+				}
+				if !exist {
+					logrus.Infof("delete non white list item: %s", ps)
+					delete(nodes, ps)
+				}
 			}
+		default:
 		}
-		return false
 	}
-	return true
 }
