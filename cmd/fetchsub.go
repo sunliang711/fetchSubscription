@@ -4,7 +4,6 @@ import (
 	"fetchSubscription/decoder"
 	"fetchSubscription/downloader"
 	"fetchSubscription/parser"
-	"fmt"
 	"os"
 	"strings"
 
@@ -18,7 +17,7 @@ func main() {
 	startPort := pflag.Int16P("sport", "p", 13000, "start port")
 	level := pflag.StringP("level", "l", "warning", "log level: debug, info, warning, error, fatal")
 	tmplFile := pflag.StringP("tmpl", "t", "v2ray.tmpl", "template file")
-	filterList := pflag.StringP("filter", "f", "", "specify filter list,format: 'w:VIP2,VIP3;b:game,tv'; 'w' for white list, 'b' for black list. filter rule execute one by one")
+	filterList := pflag.StringP("filter", "f", "", "unix-like pipe filter; specify filter list,format: 'w:VIP2,VIP3;b:game,tv'; 'w' for white list, 'b' for black list. filter rule execute one by one")
 
 	pflag.Parse()
 
@@ -37,9 +36,14 @@ func main() {
 		logrus.SetLevel(logrus.WarnLevel)
 	}
 
+	logrus.Infof("sub url: %v", *subURL)
+	logrus.Infof("output config file: %v", *outputFile)
+	logrus.Infof("start port: %v", *startPort)
+	logrus.Infof("template file: %v", *tmplFile)
+	logrus.Infof("filter list: %v", *filterList)
+
 	var cfgs []*parser.FilterConfig
 	if len(*filterList) > 0 {
-		logrus.Debugf("filter list: %v", *filterList)
 		// split by ';'
 		lists := strings.Split(*filterList, ";")
 		for _, list := range lists {
@@ -82,19 +86,19 @@ func main() {
 
 	config, err := parser.ParseMultiV2ray(decoded, cfgs, int(*startPort), *tmplFile)
 	if err != nil {
-		fmt.Printf("ParseMulti error: %v", err)
-		return
+		logrus.Fatalf("ParseMulti error: %v", err)
 	}
-	// fmt.Printf("config: %v", config)
 	logrus.Debugf("config: %v", config)
 
 	f, err := os.OpenFile(*outputFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
-		fmt.Printf("open file error: %v", err)
-		return
+		logrus.Fatalf("open file error: %v", err)
 	}
 	defer f.Close()
-	f.WriteString(config)
+	_, err = f.WriteString(config)
+	if err != nil {
+		logrus.Fatalf("Write file: %v error: %v", *outputFile, err)
+	}
 	logrus.Infof("config file has written to '%v'", *outputFile)
 
 }

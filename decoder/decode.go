@@ -28,11 +28,13 @@ func Decode(content string) (string, error) {
 	content = strings.ReplaceAll(content, "_", "/")
 	logrus.Debugf("decoded decode content: %v", content)
 
+	logrus.Infof("Decode...")
 	ret, err := base64.StdEncoding.DecodeString(content)
 	if err != nil {
 		logrus.Errorf("decode error: %v", err)
 		return "", err
 	}
+	logrus.Infof("Decoded.")
 
 	return string(ret), nil
 }

@@ -3,8 +3,16 @@ package downloader
 import (
 	"io/ioutil"
 	"net/http"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	// unit: ms
+	default_download_timeout = 5000
 )
 
 func Download(subscriptionURL string, headers map[string][]string) (string, error) {
@@ -23,7 +31,15 @@ func Download(subscriptionURL string, headers map[string][]string) (string, erro
 
 	}
 
-	client := http.Client{}
+	downloadTimeoutEnv := os.Getenv("DOWNLOAD_TIMEOUT")
+	downloadTimeout, err := strconv.Atoi(downloadTimeoutEnv)
+	if err != nil {
+		downloadTimeout = default_download_timeout
+	}
+	logrus.Infof("downloadTimeout: %v ms", downloadTimeout)
+
+	client := http.Client{Timeout: time.Millisecond * time.Duration(downloadTimeout)}
+	logrus.Infof("Downloading url: %v", subscriptionURL)
 	resp, err := client.Do(req)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{}).Errorf("client.Do error: %v", err)
@@ -36,6 +52,7 @@ func Download(subscriptionURL string, headers map[string][]string) (string, erro
 		logrus.WithFields(logrus.Fields{}).Errorf("read response error: %v", err)
 		return "", nil
 	}
+	logrus.Infof("Downloaded content: %v...", string(ret)[:50])
 
 	return string(ret), nil
 }

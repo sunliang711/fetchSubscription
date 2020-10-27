@@ -55,6 +55,7 @@ func initTmpl(tmplFile string) {
 
 // Parse生成outbound的map或者含有单个outbound配置文件(full=true)字符串的map
 func Parse(nodesContent string, cfgs []*FilterConfig, full bool, tmplFile string) (map[string]string, error) {
+	logrus.Infof("Parse...")
 	initTmpl(tmplFile)
 
 	// name => config
@@ -78,6 +79,7 @@ func Parse(nodesContent string, cfgs []*FilterConfig, full bool, tmplFile string
 	}
 
 	filter(ret, cfgs)
+	logrus.Infof("Pased.")
 	return ret, nil
 }
 
@@ -99,6 +101,7 @@ type Multi struct {
 // PaParseMultiV2ray 生成所有所有节点都放在同一个配置文件中
 func ParseMultiV2ray(nodesContent string, cfg []*FilterConfig, startPort int, tmplFile string) (string, error) {
 	// full = false,来获取所有outbound的map
+	logrus.Infof("ParseMultiV2ray...")
 	outbounds, err := Parse(nodesContent, cfg, false, tmplFile)
 	if err != nil {
 		return "", err
@@ -140,6 +143,7 @@ func ParseMultiV2ray(nodesContent string, cfg []*FilterConfig, startPort int, tm
 	if err != nil {
 		return "", err
 	}
+	logrus.Infof("ParseMultiV2ray done.")
 	return b.String(), nil
 }
 
