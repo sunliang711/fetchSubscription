@@ -65,7 +65,10 @@ fi
 # TODO
 build(){
     cd "${this}"
-    go build -o fetch cmd/fetchsub.go
+    now=$(date +'%Y-%m-%d_%T')
+    sha1=$(git rev-parse HEAD)
+    echo "Build cmd/fetchsub.go to ./fetch"
+    go build -ldflags "-X main.sha1ver=$sha1 -X main.buildTime=$now" -o fetch cmd/fetchsub.go
 }
 
 em(){

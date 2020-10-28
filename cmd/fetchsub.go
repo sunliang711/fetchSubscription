@@ -4,11 +4,17 @@ import (
 	"fetchSubscription/decoder"
 	"fetchSubscription/downloader"
 	"fetchSubscription/parser"
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
+)
+
+var (
+	sha1ver   string
+	buildTime string
 )
 
 const (
@@ -18,6 +24,12 @@ const (
 )
 
 func main() {
+	if sha1ver != "" {
+		fmt.Printf("%-16s%s\n", "Build Version: ", sha1ver)
+	}
+	if buildTime != "" {
+		fmt.Printf("%-16s%s\n", "Build Time: ", buildTime)
+	}
 	subURL := pflag.StringP("url", "u", "", "subscription url")
 	outputFile := pflag.StringP("output", "o", "config.json", "output config file")
 	startPort := pflag.Int16P("sport", "p", 13000, "start port")
