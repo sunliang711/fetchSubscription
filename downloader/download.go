@@ -12,7 +12,8 @@ import (
 
 const (
 	// unit: ms
-	default_download_timeout = 5000
+	default_download_timeout  = 5000
+	max_download_content_size = 50
 )
 
 func Download(subscriptionURL string, headers map[string][]string) (string, error) {
@@ -34,9 +35,11 @@ func Download(subscriptionURL string, headers map[string][]string) (string, erro
 	downloadTimeoutEnv := os.Getenv("DOWNLOAD_TIMEOUT")
 	downloadTimeout, err := strconv.Atoi(downloadTimeoutEnv)
 	if err != nil {
+		logrus.Infof("Use default_download_timeout: %v", default_download_timeout)
 		downloadTimeout = default_download_timeout
+	} else {
+		logrus.Infof("use env DOWNLOAD_TIMEOUT: %v", downloadTimeout)
 	}
-	logrus.Infof("downloadTimeout: %v ms", downloadTimeout)
 
 	client := http.Client{Timeout: time.Millisecond * time.Duration(downloadTimeout)}
 	logrus.Infof("Downloading url: %v", subscriptionURL)
@@ -52,7 +55,12 @@ func Download(subscriptionURL string, headers map[string][]string) (string, erro
 		logrus.WithFields(logrus.Fields{}).Errorf("read response error: %v", err)
 		return "", nil
 	}
-	logrus.Infof("Downloaded content: %v...", string(ret)[:50])
+
+	atMost := len(ret)
+	if atMost > max_download_content_size {
+		atMost = max_download_content_size
+	}
+	logrus.Infof("Downloaded content: %v...", string(ret)[:atMost])
 
 	return string(ret), nil
 }

@@ -11,13 +11,19 @@ import (
 	"github.com/spf13/pflag"
 )
 
+const (
+	SEP_LIST      = "|"
+	SEP_KEY_VALUE = ":"
+	SEP_ITEM      = ","
+)
+
 func main() {
 	subURL := pflag.StringP("url", "u", "", "subscription url")
 	outputFile := pflag.StringP("output", "o", "config.json", "output config file")
 	startPort := pflag.Int16P("sport", "p", 13000, "start port")
 	level := pflag.StringP("level", "l", "warning", "log level: debug, info, warning, error, fatal")
 	tmplFile := pflag.StringP("tmpl", "t", "v2ray.tmpl", "template file")
-	filterList := pflag.StringP("filter", "f", "", "unix-like pipe filter; specify filter list,format: 'w:VIP2,VIP3;b:game,tv'; 'w' for white list, 'b' for black list. filter rule execute one by one")
+	filterList := pflag.StringP("filter", "f", "", "unix-like pipe filter; specify filter list,format: 'w:VIP2,VIP3|b:game,tv'; 'w' for white list, 'b' for black list. filter rule execute one by one")
 
 	pflag.Parse()
 
@@ -44,15 +50,15 @@ func main() {
 
 	var cfgs []*parser.FilterConfig
 	if len(*filterList) > 0 {
-		// split by ';'
-		lists := strings.Split(*filterList, ";")
+		// split by '|'
+		lists := strings.Split(*filterList, SEP_LIST)
 		for _, list := range lists {
 			if len(list) == 0 {
 				continue
 			}
 			logrus.Debugf("list item: %v", list)
 			// split by ':'
-			items := strings.Split(list, ":")
+			items := strings.Split(list, SEP_KEY_VALUE)
 			if len(items) != 2 {
 				logrus.Fatalf("filter list format error")
 			}
@@ -65,7 +71,7 @@ func main() {
 			default:
 				logrus.Fatalf("filter list format error: unknow filter type")
 			}
-			cfg.Lists = strings.Split(items[1], ",")
+			cfg.Lists = strings.Split(items[1], SEP_ITEM)
 			cfgs = append(cfgs, cfg)
 		}
 	}

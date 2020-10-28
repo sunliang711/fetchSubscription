@@ -220,7 +220,7 @@ func convert_vmess(node string, full bool) (string, string, error) {
 	}
 	outbound := w.String()
 	ioutil.ReadAll(&w)
-	logrus.Infof("vmess node result: %v", outbound)
+	logrus.Debugf("vmess node result: %v", outbound)
 
 	if full {
 		tmpl.ExecuteTemplate(&w, "single-outbound", map[string]string{"outbound": outbound})
