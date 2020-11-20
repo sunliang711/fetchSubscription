@@ -86,6 +86,10 @@
             ]
         },
         "streamSettings": {
+            "sockopt": {
+                // for transparent proxy
+                "mark": 255
+            },
             "network": "{{.network}}",
             "security": "{{.security}}",
             "tlsSettings": {{.tlsSettings}},
